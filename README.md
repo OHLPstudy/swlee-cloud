@@ -89,7 +89,7 @@ TLS는 안전한 인터넷 통신을 위한 암호화 및 인증 프로토콜입
 TLS 핸드셰이크 중에, 통신하는 양측에서는 메시지를 교환하여 서로를 인식하고 서로를 검증하며 사용할 암호화 알고리즘을 구성하고 세션 키에 합의합니다. TLS 핸드셰이크는 HTTPS 작동 원리의 근간을 이룹니다.
 해당 핸드쉐이크는 HTTPS 통신이 발생할때마다 매번 TLS 핸드셰이크가 발생
 
-### 그러면 HTTP 통신은 핸드쉐이크를 하지 않습니까?
+### 그러면 HTTP 통신은 TLS 핸드쉐이크를 하지 않습니까?
 네
 
 ### 하지만 TCP 핸드셰이크는 합니다.
@@ -99,5 +99,26 @@ HTTP 통신또한 TCP 레이어에 속하므로 당연히 3(4) way HandShake를 
 그러므로 HTTPS는 TCP HandShake, tls HandShake 두 단계를 모두 진행합니다.
 
 ## Private Subnet 장점
+ - 외부 접근 차단
+ - VPC 내부 통신
 
 ### Private Subnet 를 이용한 아키텍처를 굳이 고집할 필요가 있습니까?
+외부에서 접근이 가능하다는 것은 보안적으로 취약점을 가질 수 밖에 없습니다. 
+외부에서 접근할수 있는 포인트는 ELB로 두어 위험할 수 있는 어플리케이션 서버는 Private Subnet영역에 두는 것이 좋다고 생각합니다.
+또한 ALB 자체에서 SSL 통신을 진행하고 내부 인스턴스에서는 HTTP 통신으로 진행된다면 TLS 핸드쉐이크를 진행 할 필요가 없어 인스턴스에 부하가 줄어듭니다.
+
+### Public Subnet에서도 같은 VPC 영역에 있다면 Private Ip로 충분히 HTTP 통신을 진행 할 수 있는데요?
+맞음
+외부 접근은 SSL 이 적용 된 도메인으로 통신(Pulbic IP)받고 인스턴스끼리는 Private IP로 통신하여 HTTP 통신을 진행 할 수 있습니다.
+하지만 보안적으로 취약점이 생기고, 굳이 그럴 필요가 없습니다.
+
+### SSL Termination
+https://blog.omoknooni.me/133
+앞서 말한 ALB 같은 로드밸런서에 SSL 관리포인트를 주는 방법을 SSL Termination 이라고 합니다.
+
+<img width="1280" height="646" alt="image" src="https://github.com/user-attachments/assets/cdfbc43f-b9f3-456c-9acd-f3a8f681c8b2" />
+
+하지만 내부 백엔드 서버단에서 SSL 암호과 풀린 채로 전달되면 MITM(중간자공격)  (두 당사자 통신 가로채어 조작하는 사이버공격임)
+에 노출되어 보안적으로 취약해질수 있습니다.
+하지만 Private Subnet 영역에서 내부 통신이 이뤄진다면 MITM에서 어느정도 자유로울 수 있습니다.
+어느정도라고 한 이유는 내부에서 뚫리거나 AWS 내부 네트워크의 취약점으로 네트워크 레이어가 뚫리면 문제가 될 수 있음
